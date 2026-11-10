@@ -9,6 +9,32 @@ The reference deployment runs on plain Linux VMs or bare metal:
 
 Templates are in `deploy/`.
 
+## 0. Public demo in five minutes (Render, free)
+
+To show FlexDrop Studio on a public URL without running a server yourself, the repository has a
+[Render](https://render.com) blueprint, `render.yaml`. It uses native Python (no Docker) and the free plan:
+
+1. Push the repository to GitHub.
+2. Sign in to https://dashboard.render.com with GitHub. Choose **New → Blueprint**, pick the
+   repository and press **Apply**.
+3. The first build takes about 5 minutes. The site is then live at
+   `https://<service-name>.onrender.com/app/`, and every push to `main` redeploys it.
+
+What the blueprint does:
+* **build:** `pip install -c constraints.txt -e .`, with the verified versions on Python 3.13.4;
+* **start:** `python -m flexdrop studio --host 0.0.0.0 --port $PORT`;
+* **health check:** `/app/`.
+
+Things to know about this demo deployment:
+* It runs **Studio mode**, the seeded demo world with synthetic data. Every visitor gets the
+  session's demo admin key, and all visitors share one world, so it is a demo rather than a
+  production service. A restart, which happens on every deploy, resets the world.
+* The free plan sleeps after about 15 minutes without traffic. The next visit wakes it in under a
+  minute. Memory use is about 200 to 250 MB, within the free 512 MB.
+* The 3D view renders in the visitor's browser, so the server does no graphics work.
+
+The rest of this document covers the production deployment.
+
 ## 1. Topology
 
 ```

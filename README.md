@@ -89,6 +89,7 @@ comes from customer flexibility and how much from the optimiser alone.
 | Linux, macOS, WSL | `bash scripts/run_all.sh`, then `.venv/bin/python -m flexdrop studio` |
 | Windows PowerShell | `powershell -ExecutionPolicy Bypass -File scripts\run_all.ps1`, then `.venv\Scripts\python.exe -m flexdrop studio` |
 | Google Colab | see [docs/setup.md](docs/setup.md#google-colab) |
+| Public demo (Render, free) | **New → Blueprint** on render.com with this repo; see [docs/deployment.md](docs/deployment.md#0-public-demo-in-five-minutes-render-free) |
 
 Then open http://127.0.0.1:8000/app/. If Windows Smart App Control blocks the compiled Python
 libraries ("An Application Control policy has blocked this file"), use WSL or Colab.
@@ -161,6 +162,7 @@ data/sample/           generated sample data (scenarios + training history)
 models/                trained model artefacts + metadata (metrics)
 reports/               simulation outputs (SUMMARY.md, ROBUSTNESS.md, per-order CSVs)
 deploy/                systemd unit, nginx config, production env template
+render.yaml            one-click public demo on Render (free, no Docker)
 ```
 
 ## Documentation

@@ -1,0 +1,14 @@
+# One-click public demo on Render (https://render.com): native Python, no Docker.
+# Render dashboard: New > Blueprint > pick this repository > Apply.
+services:
+  - type: web
+    name: flexdrop
+    runtime: python
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install -c constraints.txt -e .
+    startCommand: python -m flexdrop studio --host 0.0.0.0 --port $PORT
+    healthCheckPath: /app/
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.4
