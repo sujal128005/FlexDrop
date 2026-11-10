@@ -1,0 +1,20 @@
+# Pinned direct dependencies of FlexDrop 1.0.0 (verified on Python 3.13).
+# scikit-learn must match the version the shipped models were trained with.
+# Transitive packages (numpy, pandas, scipy, ...) are left to pip so this file does not
+# override pre-installed environments such as Google Colab.
+# Use:  pip install -c constraints.txt -e ".[dev]"
+fastapi==0.162.2
+uvicorn==0.54.0
+pydantic==2.14.3
+pydantic-settings==2.16.2
+SQLAlchemy==2.1.8
+alembic==1.20.1
+scikit-learn==1.9.1
+joblib==1.6.0
+prometheus_client==0.26.0
+ortools==9.15.6755
+httpx==0.28.1
+pytest==9.2.0
+pytest-cov==7.1.0
+ruff==0.17.4
+mypy==2.4.1

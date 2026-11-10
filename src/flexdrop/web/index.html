@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FlexDrop Studio</title>
+  <meta name="description" content="FlexDrop: customer-approved delivery flexibility, coordinated deliveries, lower costs.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23fc8019'/%3E%3Cpath d='M9 22l7-13 7 13' stroke='white' stroke-width='3' fill='none'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">F</span>
+      <div>
+        <div class="brand-name">FlexDrop</div>
+        <div class="brand-sub">Your flexibility. Better deliveries. Lower costs.</div>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Views">
+      <button class="tab active" role="tab" data-view="checkout" aria-selected="true">Student checkout</button>
+      <button class="tab" role="tab" data-view="ops" aria-selected="false">Operations</button>
+      <button class="tab" role="tab" data-view="results" aria-selected="false">Results</button>
+    </nav>
+    <div class="clock" aria-label="Simulation clock">
+      <div class="clock-time"><span class="clock-label">Sim time (IST)</span><strong id="clock-now">--:--</strong></div>
+      <button class="btn small" id="btn-tick1" title="Advance the clock by 1 minute">+1 min</button>
+      <button class="btn small" id="btn-tick5" title="Advance the clock by 5 minutes">+5 min</button>
+      <button class="btn small primary" id="btn-auto" title="Run the campus automatically">&#9654; Auto</button>
+      <select id="demand" class="small-select" title="Demand while auto-running" aria-label="Demand level">
+        <option value="0.8">Quiet</option>
+        <option value="1.8" selected>Evening</option>
+        <option value="3">Peak</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <!-- ============================== CHECKOUT ============================== -->
+    <section id="view-checkout" class="view active" role="tabpanel">
+      <div class="checkout-layout">
+        <div class="phone" aria-label="Customer app preview">
+          <div class="phone-notch"></div>
+          <div class="phone-screen" id="phone-screen"></div>
+        </div>
+        <aside class="explain card">
+          <h2>What the student sees</h2>
+          <ol class="steps">
+            <li><strong>Order as usual.</strong> FlexDrop predicts preparation and travel time and shows the standard ETA.</li>
+            <li><strong>Choose flexible delivery (optional).</strong> When nearby orders make coordination likely, the student is offered a small reward for a few extra minutes. The reward is priced from expected savings.</li>
+            <li><strong>Consent is explicit.</strong> The delivery window changes only after the student accepts. The optimiser then uses as little of that flexibility as possible.</li>
+          </ol>
+          <h3>Your orders</h3>
+          <div id="my-orders" class="my-orders"><p class="muted">No orders yet.</p></div>
+          <p class="muted small">Tip: advance the clock (+1 / +5 min) or press <em>Auto</em> to watch riders pick up and deliver.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============================== OPERATIONS ============================== -->
+    <section id="view-ops" class="view" role="tabpanel">
+      <div class="ops-layout">
+        <div class="map-wrap card">
+          <div class="view-toolbar">
+            <div class="seg seg-inline" role="group" aria-label="Map style">
+              <button id="view-3d" class="active">3D campus</button>
+              <button id="view-2d">Street map</button>
+            </div>
+            <div class="toolbar-right">
+              <select id="zoom-to" class="small-select" aria-label="Zoom to a building">
+                <option value="overview">Zoom to…</option>
+              </select>
+              <button class="btn small" id="btn-daynight">Day view</button>
+              <button class="btn small" id="btn-reset-view">Reset view</button>
+              <button class="btn small" id="btn-rotate">Auto-rotate</button>
+            </div>
+          </div>
+          <div id="scene3d" class="scene3d" aria-label="3D campus view. Drag to rotate, scroll to zoom."></div>
+          <div id="map" class="map hidden" aria-label="Street map"></div>
+          <div class="legend" id="legend-3d">
+            <span><i class="dot swiggy"></i>Swiggy rider (orange uniform)</span>
+            <span><i class="dot instamart"></i>Instamart rider (blue band and bag)</span>
+            <span><i class="dot food"></i>Restaurant</span>
+            <span><i class="dot grocery"></i>Instamart store</span>
+            <span><i class="dot gate"></i>Hostel wing and PG drop points</span>
+            <span><i class="line group"></i>Thick glowing path: coordinated route</span>
+            <span><i class="line solo"></i>Thin path: single order</span>
+            <span><i class="dot beacon"></i>Amber beacon: orders waiting to be combined</span>
+            <span class="muted">One entrance: every rider enters IIITDM Kurnool through the main gate, where the uniform is checked. Drag to rotate, scroll to zoom, hover a rider or route for details.</span>
+            <span class="muted" id="world-note"></span>
+          </div>
+        </div>
+        <aside class="side">
+          <div class="kpis" id="kpis"></div>
+          <div class="card controls">
+            <h3>Controls</h3>
+            <div class="control-row">
+              <button class="btn" id="btn-gen">Generate 10 orders</button>
+              <button class="btn" id="btn-opt">Run optimiser</button>
+            </div>
+            <div class="control-row">
+              <button class="btn warn" id="btn-delay">Inject restaurant delay</button>
+              <button class="btn danger" id="btn-kill">Kill switch: OFF</button>
+            </div>
+            <p class="muted small" id="opt-status">Optimiser idle.</p>
+          </div>
+          <div class="card log-card">
+            <h3>Live decision log</h3>
+            <ul id="log" class="log" aria-live="polite"></ul>
+          </div>
+        </aside>
+      </div>
+      <div class="card">
+        <h3>Delivery plans <span class="muted small" id="plans-count"></span></h3>
+        <div class="table-wrap">
+          <table class="table" id="plans-table">
+            <thead><tr><th>Plan</th><th>Rider</th><th>Orders</th><th>Type</th><th>Status</th><th>Route cost</th><th>Saving vs solo</th><th>Flex used</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== RESULTS ============================== -->
+    <section id="view-results" class="view" role="tabpanel">
+      <div id="results"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    FlexDrop prototype by Team Nexara9 &middot; synthetic data, hypothetical costs &middot;
+    <a href="/docs" target="_blank" rel="noopener">API docs</a>
+  </footer>
+
+  <div class="modal hidden" id="login" role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <div class="modal-box card">
+      <h2 id="login-title">Connect to FlexDrop</h2>
+      <p class="muted">This server is not in studio mode. Enter an API key with the <code>admin</code> role (create one with <code>flexdrop create-api-key</code>).</p>
+      <label for="login-key">API key</label>
+      <input id="login-key" type="password" autocomplete="off" placeholder="fdk_...">
+      <label for="login-zone">Zone (optional)</label>
+      <input id="login-zone" type="text" placeholder="campus">
+      <p class="error small" id="login-error"></p>
+      <button class="btn primary" id="login-btn">Connect</button>
+    </div>
+  </div>
+  <div class="toasts" id="toasts" aria-live="assertive"></div>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

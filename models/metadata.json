@@ -1,0 +1,70 @@
+{
+  "features": {
+    "acceptance": [
+      "reward",
+      "extra_min",
+      "past_rate",
+      "is_student",
+      "basket_value",
+      "hour_sin",
+      "hour_cos"
+    ],
+    "coordination": [
+      "extra_min",
+      "n_near_pickup",
+      "n_near_drop",
+      "n_near_both",
+      "hour_sin",
+      "hour_cos",
+      "is_food"
+    ],
+    "prep": [
+      "is_food",
+      "store_base_prep",
+      "item_count",
+      "hour_sin",
+      "hour_cos",
+      "is_weekend",
+      "store_load"
+    ],
+    "travel": [
+      "road_km",
+      "hour_sin",
+      "hour_cos",
+      "is_weekend"
+    ]
+  },
+  "metrics": {
+    "acceptance": {
+      "auc": 0.8949820109507862,
+      "base_rate": 0.6689,
+      "brier": 0.12165705436570097,
+      "coef_extra_min": -0.15703968035102697,
+      "coef_reward": 0.2177989730266601,
+      "log_loss": 0.38092913336344325,
+      "prior_auc": 0.8953043247188762,
+      "rows": 20000.0
+    },
+    "coordination": {
+      "auc": 0.7981382978723405,
+      "base_rate": 0.5701149425287356,
+      "brier": 0.18456510233252105,
+      "prior_auc": 0.7753324468085107,
+      "rows": 870.0
+    },
+    "prep": {
+      "mae_min": 2.377363624867019,
+      "p90_coverage": 0.89225,
+      "prior_mae_min": 2.516010525,
+      "rows": 20000.0
+    },
+    "travel": {
+      "mae_min": 2.6052147341597003,
+      "prior_mae_min": 2.9100665434294872,
+      "rows": 20000.0
+    }
+  },
+  "seed": 42,
+  "sklearn_version": "1.9.1",
+  "trained_at": "2026-11-09T10:52:14.419508+00:00"
+}

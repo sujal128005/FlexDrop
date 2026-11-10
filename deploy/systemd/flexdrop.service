@@ -1,0 +1,31 @@
+[Unit]
+Description=FlexDrop adaptive delivery coordination API
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=flexdrop
+Group=flexdrop
+WorkingDirectory=/opt/flexdrop
+EnvironmentFile=/etc/flexdrop/flexdrop.env
+ExecStart=/opt/flexdrop/.venv/bin/uvicorn flexdrop.api.app:create_app --factory --host 127.0.0.1 --port 8000 --workers 4 --proxy-headers --no-server-header
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=30
+# hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/flexdrop
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

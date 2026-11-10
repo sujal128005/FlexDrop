@@ -1,0 +1,10 @@
+[Unit]
+Description=FlexDrop data-retention purge
+
+[Service]
+Type=oneshot
+User=flexdrop
+Group=flexdrop
+WorkingDirectory=/opt/flexdrop
+EnvironmentFile=/etc/flexdrop/flexdrop.env
+ExecStart=/opt/flexdrop/.venv/bin/flexdrop purge

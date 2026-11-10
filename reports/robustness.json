@@ -1,0 +1,102 @@
+{
+  "campus": {
+    "independent": {
+      "fulfilment_cost_per_order_mean": 75.75626,
+      "on_time_rate_mean": 0.94398,
+      "coordinated_share_mean": 0.0,
+      "avg_click_to_door_min_mean": 28.587040000000002,
+      "km_per_order_mean": 4.2772,
+      "fulfilment_cost_per_order_std": 2.0923687596597325,
+      "on_time_rate_std": 0.027350861046775095,
+      "coordinated_share_std": 0.0,
+      "avg_click_to_door_min_std": 1.276435666377276,
+      "km_per_order_std": 0.2099488985443838,
+      "cost_change_pct_mean": 0.0,
+      "cost_change_pct_std": 0.0,
+      "on_time_change_pp_mean": 0.0,
+      "on_time_change_pp_std": 0.0
+    },
+    "batching": {
+      "fulfilment_cost_per_order_mean": 69.80412,
+      "on_time_rate_mean": 0.94284,
+      "coordinated_share_mean": 0.20132,
+      "avg_click_to_door_min_mean": 28.91402,
+      "km_per_order_mean": 3.7912400000000006,
+      "fulfilment_cost_per_order_std": 2.6850850544442726,
+      "on_time_rate_std": 0.007891413054706973,
+      "coordinated_share_std": 0.02656986262666783,
+      "avg_click_to_door_min_std": 0.9290943254589388,
+      "km_per_order_std": 0.2630830332803694,
+      "cost_change_pct_mean": -7.875350380693815,
+      "cost_change_pct_std": 1.6669323338770996,
+      "on_time_change_pp_mean": -0.11400000000000077,
+      "on_time_change_pp_std": 2.3486898475533113
+    },
+    "flexdrop": {
+      "fulfilment_cost_per_order_mean": 63.97008000000001,
+      "on_time_rate_mean": 0.94478,
+      "coordinated_share_mean": 0.62696,
+      "avg_click_to_door_min_mean": 32.28808,
+      "km_per_order_mean": 3.1022400000000006,
+      "fulfilment_cost_per_order_std": 1.645811342043794,
+      "on_time_rate_std": 0.01030386335313118,
+      "coordinated_share_std": 0.03746537601572951,
+      "avg_click_to_door_min_std": 1.2673469886341309,
+      "km_per_order_std": 0.14485027580229176,
+      "cost_change_pct_mean": -15.540206452844917,
+      "cost_change_pct_std": 1.525899670347838,
+      "on_time_change_pp_mean": 0.07999999999999785,
+      "on_time_change_pp_std": 2.0922141381799313
+    }
+  },
+  "city": {
+    "independent": {
+      "fulfilment_cost_per_order_mean": 80.2677,
+      "on_time_rate_mean": 0.9570599999999999,
+      "coordinated_share_mean": 0.0,
+      "avg_click_to_door_min_mean": 28.67228,
+      "km_per_order_mean": 4.684099999999999,
+      "fulfilment_cost_per_order_std": 2.3760660277020946,
+      "on_time_rate_std": 0.024676434102195565,
+      "coordinated_share_std": 0.0,
+      "avg_click_to_door_min_std": 1.0492304520933418,
+      "km_per_order_std": 0.26508050852524023,
+      "cost_change_pct_mean": 0.0,
+      "cost_change_pct_std": 0.0,
+      "on_time_change_pp_mean": 0.0,
+      "on_time_change_pp_std": 0.0
+    },
+    "batching": {
+      "fulfilment_cost_per_order_mean": 78.64818,
+      "on_time_rate_mean": 0.9626199999999999,
+      "coordinated_share_mean": 0.02616,
+      "avg_click_to_door_min_mean": 28.489420000000003,
+      "km_per_order_mean": 4.5301599999999995,
+      "fulfilment_cost_per_order_std": 2.199729660117352,
+      "on_time_rate_std": 0.015876699908986113,
+      "coordinated_share_std": 0.013498681417086633,
+      "avg_click_to_door_min_std": 0.9504606196997328,
+      "km_per_order_std": 0.22981041403731026,
+      "cost_change_pct_mean": -2.0082321793702196,
+      "cost_change_pct_std": 0.9941365696675328,
+      "on_time_change_pp_mean": 0.5560000000000009,
+      "on_time_change_pp_std": 1.3070975480047402
+    },
+    "flexdrop": {
+      "fulfilment_cost_per_order_mean": 71.54696,
+      "on_time_rate_mean": 0.9599399999999999,
+      "coordinated_share_mean": 0.24316,
+      "avg_click_to_door_min_mean": 30.67638,
+      "km_per_order_mean": 3.75814,
+      "fulfilment_cost_per_order_std": 1.6913994697882602,
+      "on_time_rate_std": 0.011694203692428122,
+      "coordinated_share_std": 0.024218720032239526,
+      "avg_click_to_door_min_std": 0.7891134149157517,
+      "km_per_order_std": 0.16485570175156222,
+      "cost_change_pct_mean": -10.841930820246242,
+      "cost_change_pct_std": 1.2677274743665425,
+      "on_time_change_pp_mean": 0.2880000000000016,
+      "on_time_change_pp_std": 2.9483514037509164
+    }
+  }
+}
