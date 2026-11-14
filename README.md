@@ -5,6 +5,8 @@
 > **Your flexibility. Better deliveries. Lower costs.**
 > Team **Nexara9** (Sujal & Navya) · Swiggy *Food for Thought 2.0*
 
+**🌐 Live demo:** [https://flexdrop.onrender.com/app/](https://flexdrop.onrender.com/app/) *(free Render instance: the first visit after a quiet spell can take up to a minute to wake up)*
+
 FlexDrop treats **customer-approved delivery flexibility** as an explicit, bounded optimisation
 variable. At checkout, a student can choose *"deliver 10 minutes later and get ₹8 back"*. FlexDrop
 prices that offer from expected savings. It then uses only as much of each customer's approved
