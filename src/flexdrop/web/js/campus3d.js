@@ -17,7 +17,7 @@
 import * as THREE from '../vendor/three/three.module.min.js';
 import { CSS2DObject, CSS2DRenderer } from '../vendor/three/CSS2DRenderer.js';
 import { OrbitControls } from '../vendor/three/OrbitControls.js';
-import { colorFor, fmtMoney, shortId } from './util.js';
+import { colorFor, fmtMoney, fmtSaving, shortId } from './util.js';
 import {
   INSTAMART_BLUE, SWIGGY_ORANGE, bagTexture, barrierTexture, brandFor, brickTexture, clockTexture,
   emblem, facade, flagTexture, flowTexture, gatePanelTexture, glowTexture, hashString, instamartSign,
@@ -404,7 +404,7 @@ export class Campus3D {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.shadowMap.autoUpdate = false; // refreshed every few frames in frame()
+    this.renderer.shadowMap.autoUpdate = false; // static shadows: re-rendered only when lighting changes
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.domElement.className = 'scene-canvas';
@@ -427,6 +427,8 @@ export class Campus3D {
     this.controls.minDistance = 14;
     this.controls.maxDistance = 1800;
     this.controls.autoRotateSpeed = 0.5;
+    this.controls.zoomToCursor = true; // scroll zooms towards the point under the mouse, like a map
+    this.controls.zoomSpeed = 1.1;
     this.warmGlow = new THREE.SpriteMaterial({ map: glowTexture('rgba(255,190,110,1)'), blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.5 });
     this.lampGlow = new THREE.SpriteMaterial({ map: glowTexture('rgba(255,214,140,1)'), blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.55 });
     this.menuTex = textTexture('MENU', { bg: '#1f1a17', fg: '#ffe2a6', w: 128, h: 128, size: 34 });
@@ -462,6 +464,18 @@ export class Campus3D {
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
     this.renderer.domElement.addEventListener('pointermove', (e) => this.onPointer(e));
+    this.followBanner = document.createElement('div');
+    this.followBanner.className = 'scene-follow hidden';
+    const followText = document.createElement('span');
+    const stopBtn = document.createElement('button');
+    stopBtn.type = 'button';
+    stopBtn.textContent = 'Stop following';
+    stopBtn.addEventListener('click', () => this.follow(null));
+    this.followBanner.append(followText, stopBtn);
+    this.followText = followText;
+    container.append(this.followBanner);
+    // dragging the view ends follow mode (scrolling to zoom keeps following)
+    this.renderer.domElement.addEventListener('pointerdown', () => { if (this.followId) this.follow(null); });
     this.renderer.domElement.addEventListener('pointerleave', () => {
       this.tooltip.classList.add('hidden');
       this.highlight = null;
@@ -507,6 +521,7 @@ export class Campus3D {
       if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { m.needsUpdate = true; });
     });
     this.setTimeOfDay(this.mode);
+    this.renderer.shadowMap.needsUpdate = true;
     this.resize();
   }
 
@@ -826,7 +841,7 @@ export class Campus3D {
     }
     const m = new THREE.Matrix4();
     for (const o of [...this.scene.children]) {
-      if (o.isLight || o === this.sunTarget || o === this.trafficGroup) continue;
+      if (o.isLight || o === this.sunTarget || o === this.trafficGroup || o.userData.noLift) continue;
       if (o.userData.drape) {
         this.drape(o);
       } else if (o.isInstancedMesh) {
@@ -966,6 +981,7 @@ export class Campus3D {
     for (const g of this.glows) g.visible = cfg.lamps > 0;
     for (const v of this.traffic) v.lights.visible = cfg.lamps > 0;
     for (const r of this.riders.values()) r.group.userData.lamp.visible = Boolean(r.view) && cfg.lamps > 0;
+    this.renderer.shadowMap.needsUpdate = true;
     this.container.classList.toggle('day', mode === 'day');
   }
 
@@ -1809,16 +1825,23 @@ export class Campus3D {
     const bulbMat = this.litMaterial({ color: 0xfff1c2, emissive: 0xffd27a, emissiveIntensity: 2.4 }, 2.4);
     const bulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.75, 10, 8), bulbMat, spots.length);
     const m = new THREE.Matrix4();
-    const glowGroup = new THREE.Group();
-    glowGroup.userData.container = true;
+    const glowPos = [];
     spots.forEach((p, i) => {
       poles.setMatrixAt(i, m.makeTranslation(p.x, 4.5, p.z));
       bulbs.setMatrixAt(i, m.makeTranslation(p.x, 9.2, p.z));
-      if (i % 2 === 0) this.glowSprite(glowGroup, p.x, 9.2, p.z, 9, this.lampGlow);
+      glowPos.push(p.x, 9.2 + this.heightAt(p.x, p.z), p.z);
       this.obstacle(p, 0.6, 'lamp');
     });
     poles.castShadow = true;
-    this.scene.add(poles, bulbs, glowGroup);
+    const glowGeo = new THREE.BufferGeometry();
+    glowGeo.setAttribute('position', new THREE.Float32BufferAttribute(glowPos, 3));
+    const glowPoints = new THREE.Points(glowGeo, new THREE.PointsMaterial({
+      map: this.lampGlow.map, size: 9, sizeAttenuation: true, transparent: true, opacity: 0.55,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    }));
+    glowPoints.userData.noLift = true;
+    this.glows.push(glowPoints);
+    this.scene.add(poles, bulbs, glowPoints);
     this.lampSpots = spots;
   }
 
@@ -2120,9 +2143,46 @@ export class Campus3D {
         sampleTrack(tr, v.s, v.pos, v.dir);
         group.position.copy(v.pos);
         group.rotation.y = Math.atan2(v.dir.x, v.dir.z);
+        group.traverse((o) => { o.castShadow = false; });
         this.traffic.push(v);
       }
     }
+    // one instanced draw call of soft contact shadows for every vehicle and rider
+    this.blobs = new THREE.InstancedMesh(
+      new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ map: glowTexture('rgba(0,0,0,1)'), color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false }),
+      this.traffic.length + 300,
+    );
+    this.blobs.frustumCulled = false;
+    this.blobs.renderOrder = 1;
+    this.blobs.userData.noLift = true;
+    this.scene.add(this.blobs);
+  }
+
+  /** Place the contact shadows under every vehicle and rider (one draw call). */
+  updateBlobs() {
+    const m = this.blobMatrix || (this.blobMatrix = new THREE.Matrix4());
+    const q = this.blobQuat || (this.blobQuat = new THREE.Quaternion());
+    const sc = this.blobScale || (this.blobScale = new THREE.Vector3());
+    const p = this.blobPos || (this.blobPos = new THREE.Vector3());
+    let n = 0;
+    for (const v of this.traffic) {
+      const s = v.group.scale.x / 1.25;
+      q.setFromAxisAngle(UP, v.group.rotation.y);
+      p.set(v.pos.x, v.group.position.y + 0.25, v.pos.z);
+      m.compose(p, q, sc.set(v.group.userData.width * 0.9 * s, 1, v.len * 0.55 * s));
+      this.blobs.setMatrixAt(n++, m);
+    }
+    for (const r of this.riders.values()) {
+      if (n >= this.blobs.instanceMatrix.count) break;
+      q.setFromAxisAngle(UP, r.group.rotation.y);
+      p.copy(r.group.position);
+      p.y = this.heightAt(p.x, p.z) + 0.26;
+      m.compose(p, q, sc.set(1.4, 1, 2.8));
+      this.blobs.setMatrixAt(n++, m);
+    }
+    this.blobs.count = n;
+    this.blobs.instanceMatrix.needsUpdate = true;
   }
 
   /** Move ambient vehicles; each one brakes for anything just ahead in its lane. */
@@ -2403,6 +2463,7 @@ export class Campus3D {
         rider.badge.visible = false;
         rider.group.position.copy(this.parkingSpot(p.location, p.id));
         rider.group.rotation.y = Math.random() * Math.PI * 2;
+        rider.group.traverse((o) => { o.castShadow = false; });
         this.ridersGroup.add(rider.group);
         this.riders.set(p.id, rider);
         this.pickable(rider.group, `Rider ${p.id}`);
@@ -2516,7 +2577,7 @@ export class Campus3D {
       const color = new THREE.Color(colorFor(plan.plan_id));
       const group = new THREE.Group();
       const view = { plan, legs, color, group, grouped, materials: [], labels: [] };
-      const tip = `Plan ${shortId(plan.plan_id)} · rider ${plan.partner_id} · ${plan.order_ids.length} order(s) · saving ${fmtMoney(plan.expected_savings)} vs solo`;
+      const tip = `Plan ${shortId(plan.plan_id)} · rider ${plan.partner_id} · ${plan.order_ids.length} order(s) · ${fmtSaving(plan.expected_savings)}`;
       if (pts.length >= 2) {
         const path = new THREE.CurvePath();
         const lifted = densify(pts, 6).map((q) => q.setY(this.heightAt(q.x, q.z) + 0.8));
@@ -2694,10 +2755,10 @@ export class Campus3D {
       this.tooltip.style.left = `${e.clientX - rect.left + 14}px`;
       this.tooltip.style.top = `${e.clientY - rect.top + 10}px`;
       this.tooltip.classList.remove('hidden');
-      this.highlight = hit.object.userData.planId || null;
+      if (!this.followId) this.highlight = hit.object.userData.planId || null;
     } else {
       this.tooltip.classList.add('hidden');
-      this.highlight = null;
+      if (!this.followId) this.highlight = null;
     }
   }
 
@@ -2750,6 +2811,19 @@ export class Campus3D {
       rider.badge.visible = cam.distanceTo(g.position) < RIDER_BADGE_DISTANCE;
     }
     this.stepTraffic(dt);
+    this.updateBlobs();
+    if (this.followId) {
+      const r = this.riders.get(this.followId);
+      if (r) {
+        const goal = r.group.position.clone().add(P3(0, 3, 0));
+        const step = goal.sub(this.controls.target).multiplyScalar(Math.min(1, dt * 3));
+        this.controls.target.add(step);
+        this.camera.position.add(step);
+        if (r.view) this.highlight = r.view.plan.plan_id;
+      } else {
+        this.follow(null);
+      }
+    }
     for (const view of this.routeViews) {
       if (view.tex) view.tex.offset.x -= dt * 0.9;
       const dim = this.highlight && this.highlight !== view.plan.plan_id;
@@ -2790,15 +2864,54 @@ export class Campus3D {
       return false;
     });
     for (const z of this.zoomLabels) z.obj.visible = cam.distanceTo(z.pos) < ZOOM_LABEL_DISTANCE;
-    this.frameNo = (this.frameNo || 0) + 1;
-    if (this.frameNo % 4 === 1) this.renderer.shadowMap.needsUpdate = true;
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
     this.labels.render(this.scene, this.camera);
-    const cost = performance.now() - start;
-    this.nextFrameAt = cost > 60 ? performance.now() + cost * 1.5 : 0;
-    this.slowFrames = cost > 120 ? this.slowFrames + 1 : Math.max(0, this.slowFrames - 1);
-    if (this.slowFrames > 20 && this.quality === 'high' && !this.qualityLocked) this.setQuality('lite');
+    this.adaptQuality(start, performance.now() - start);
+  }
+
+  /**
+   * Keep the view smooth: if frames are slow for a few seconds, first render at native pixel
+   * density 1, then switch to lite (no shadows, sky lighting or grass). Only a software renderer
+   * (hundreds of ms per frame) gets frames spaced out so the rest of the page stays responsive.
+   */
+  adaptQuality(start, cost) {
+    this.nextFrameAt = cost > 150 ? performance.now() + cost : 0;
+    const interval = this.lastFrameAt ? start - this.lastFrameAt : 16;
+    this.lastFrameAt = start;
+    if (this.qualityLocked || interval > 1000) return; // tab was hidden or just resumed
+    this.frameMs = this.frameMs ? this.frameMs * 0.95 + interval * 0.05 : interval;
+    this.adaptFrames = (this.adaptFrames || 0) + 1;
+    if (this.adaptFrames < 90 || this.frameMs < 45) return;
+    this.adaptFrames = 0;
+    this.frameMs = 0;
+    if (this.quality === 'high' && this.renderer.getPixelRatio() > 1) {
+      this.renderer.setPixelRatio(1);
+      this.resize();
+    } else if (this.quality === 'high') {
+      this.setQuality('lite');
+    }
+  }
+
+  /** Follow one rider with the camera (null stops). Highlights that rider's route. */
+  follow(partnerId, planId = null) {
+    this.followId = partnerId || null;
+    this.followBanner.classList.toggle('hidden', !partnerId);
+    if (!partnerId) {
+      this.highlight = null;
+      return;
+    }
+    this.followText.textContent = `Following rider ${partnerId}`;
+    if (planId) this.highlight = planId;
+    const r = this.riders.get(partnerId);
+    if (r) {
+      // look down from behind and well above the rider, so buildings rarely block the view
+      const p = r.group.position;
+      const yaw = r.group.rotation.y;
+      this.controls.target.set(p.x, p.y + 3, p.z);
+      this.camera.position.set(p.x - Math.sin(yaw) * 32, p.y + 52, p.z - Math.cos(yaw) * 32);
+      this.controls.update();
+    }
   }
 
   /** Geometry self-check used by the automated browser test: lists any overlaps in the world. */

@@ -1,6 +1,6 @@
 // Campus map: stores, hostel gates, riders and live delivery routes (Leaflet, bundled locally).
 
-import { colorFor, el, shortId } from './util.js';
+import { colorFor, el, shortId, fmtSaving } from './util.js';
 
 export class CampusMap {
   constructor(container, engine) {
@@ -15,10 +15,14 @@ export class CampusMap {
     const world = engine.world;
     const center = world.center || averageCenter(world.stores);
     this.map = L.map(container, { zoomControl: true, preferCanvas: true }).setView([center.lat, center.lng], 14);
+    // OpenStreetMap requires a Referer on tile requests (its tile usage policy)
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
+      referrerPolicy: 'strict-origin-when-cross-origin',
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(this.map);
+    const pts = [...world.stores, ...(world.gates || [])].map((p) => [p.lat, p.lng]);
+    if (pts.length > 1) this.map.fitBounds(pts, { padding: [24, 24] });
     this.routes = L.layerGroup().addTo(this.map);
     this.riders = L.layerGroup().addTo(this.map);
     this.pending = L.layerGroup().addTo(this.map);
@@ -78,7 +82,7 @@ export class CampusMap {
         opacity: grouped ? 0.9 : 0.6,
         dashArray: plan.status === 'PROPOSED' ? '6 6' : null,
       })
-        .bindTooltip(`Plan ${shortId(plan.plan_id)} · ${plan.order_ids.length} order(s) · saving ₹${plan.expected_savings.toFixed(0)}`)
+        .bindTooltip(`Plan ${shortId(plan.plan_id)} · ${plan.order_ids.length} order(s) · ${fmtSaving(plan.expected_savings)}`)
         .addTo(this.routes);
       for (const s of plan.stops) {
         L.circleMarker([s.location.lat, s.location.lng], {

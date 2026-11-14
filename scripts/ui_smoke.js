@@ -38,6 +38,11 @@ async function waitIdle(page) {
   await page.screenshot({ path: `${OUT}/2-checkout-options.png` });
   await page.click('#btn-confirm');
   await page.waitForSelector('.confirm-hero', { timeout: 90000 });
+  // confirming starts simulated time automatically and shows the live status line
+  const live = await page.evaluate(() => ({ auto: Boolean(window.flexdrop.engine.auto), status: Boolean(document.querySelector('.status-line')) }));
+  console.log('after confirm:', JSON.stringify(live));
+  if (!live.auto || !live.status) errors.push('order confirmation did not start the clock or show the status line');
+  await page.evaluate(() => window.flexdrop.engine.setAuto(false)); // the rest of the script drives time itself
   await page.screenshot({ path: `${OUT}/3-checkout-confirmed.png` });
 
   await page.click('.tab[data-view="ops"]');

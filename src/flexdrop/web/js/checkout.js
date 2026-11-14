@@ -108,7 +108,7 @@ export class Checkout {
         'div',
         { class: 'cart-bar' },
         el('button', { class: 'btn primary block', id: 'btn-continue', disabled: count === 0 || s.busy, onclick: () => this.placeOrder() },
-          count ? `Continue · ${count} item(s) · ${fmtMoney(total)}` : 'Add items to continue'),
+          s.busy ? 'Placing your order…' : count ? `Continue · ${count} item(s) · ${fmtMoney(total)}` : 'Add items to continue'),
       ),
     );
   }
@@ -179,7 +179,7 @@ export class Checkout {
       o.offers.length
         ? el('div', { class: 'why' }, 'Why the reward? If you can wait a little, your rider may combine your order with others heading to your hostel. You get Swiggy rewards; deliveries get cheaper and greener. Your food never waits beyond safe limits.')
         : el('div', { class: 'why' }, reasons[o.offers_unavailable_reason] || 'Only standard delivery is available.'),
-      el('button', { class: 'btn primary block', id: 'btn-confirm', disabled: !s.selected || s.busy, onclick: () => this.confirm() }, 'Place order'),
+      el('button', { class: 'btn primary block', id: 'btn-confirm', disabled: !s.selected || s.busy, onclick: () => this.confirm() }, s.busy ? 'Confirming…' : 'Place order'),
     );
   }
 
@@ -201,6 +201,11 @@ export class Checkout {
         'ok',
       );
       await this.engine.run(() => this.engine.refresh());
+      if (!this.engine.auto) {
+        // let simulated time run so the student sees the rider assigned, pick up and deliver
+        this.engine.setAuto(true);
+        toast('Simulated time is running: 1 minute every 1.5 s. Use ⏸ Pause (top right) to stop it.', 'ok');
+      }
     } catch (e) {
       toast(`Could not record choice: ${e.message}`, 'err');
     } finally {
@@ -214,18 +219,77 @@ export class Checkout {
     const o = this.state.order;
     const live = this.engine.orders.get(o.id) || o;
     const flex = live.mode === 'FLEX';
+    const plan = live.plan_id ? this.engine.plans.get(live.plan_id) : null;
+    const delivered = live.status === 'DELIVERED';
     this.show(
       el('div', { class: 'confirm-hero' },
-        el('div', { class: 'big' }, live.status === 'DELIVERED' ? '✅' : '🛵'),
-        el('h2', {}, live.status === 'DELIVERED' ? 'Delivered!' : 'Order confirmed'),
+        el('div', { class: 'big' }, delivered ? '✅' : '🛵'),
+        el('h2', {}, delivered ? 'Delivered!' : 'Order confirmed'),
         el('p', { class: 'muted' }, flex
           ? `Arrives between ${fmtTime(live.standard_eta)} and ${fmtTime(live.latest_delivery_at)}`
           : `Arrives by ${fmtTime(live.standard_eta)}`),
         flex ? el('span', { class: 'reward' }, `${fmtMoney(live.reward)} reward · ${live.reward_status.toLowerCase()}`) : null,
       ),
+      this.statusLine(live, plan),
+      this.progress(live, plan),
       this.timeline(live),
+      this.tripInfo(live, plan),
       this.planInfo(live),
+      plan && !delivered
+        ? el('button', { class: 'btn block', id: 'btn-watch', onclick: () => this.onWatch?.(plan.partner_id, plan.plan_id) }, `Watch rider ${plan.partner_id} in 3D`)
+        : null,
+      this.clockNote(),
       el('button', { class: 'btn block', onclick: () => this.reset() }, 'Place another order'),
+    );
+  }
+
+  /** One-line, plain-language status for the student. */
+  statusLine(order, plan) {
+    const drop = plan?.stops.find((st) => st.order_id === order.id && st.type === 'DROP');
+    const pickup = plan?.stops.find((st) => st.order_id === order.id && st.type === 'PICKUP');
+    let text;
+    if (order.status === 'DELIVERED') text = `Delivered${drop ? ` at ${fmtTime(drop.eta)}` : ''}. Enjoy your meal!`;
+    else if (order.status === 'CANCELLED') text = 'This order was cancelled.';
+    else if (order.status === 'PICKED_UP') text = `Your rider has your order and is on the way · arrives ~${fmtTime(drop?.eta || order.latest_delivery_at)}`;
+    else if (plan) text = `Rider ${plan.partner_id} assigned · picking up at ~${fmtTime(pickup?.eta || plan.start_at)}, at your hostel ~${fmtTime(drop?.eta || order.latest_delivery_at)}`;
+    else if (order.mode === 'FLEX') text = 'FlexDrop is looking for nearby orders to combine with yours. A rider is assigned within your approved window.';
+    else text = 'The restaurant is preparing your food. A rider is assigned just in time for pickup.';
+    return el('div', { class: `status-line status-${order.status}` }, text);
+  }
+
+  progress(order, plan) {
+    const drop = plan?.stops.find((st) => st.order_id === order.id && st.type === 'DROP');
+    const start = Date.parse(order.placed_at);
+    const end = Date.parse(drop?.eta || order.latest_delivery_at);
+    const frac = order.status === 'DELIVERED' ? 1 : Math.max(0.03, Math.min(0.97, (this.engine.simNow - start) / Math.max(60000, end - start)));
+    const bar = el('div', { class: 'progress' }, el('span', { style: `width:${(frac * 100).toFixed(0)}%` }));
+    return bar;
+  }
+
+  /** The rider's trip: every pickup and drop in order, with this student's stop marked. */
+  tripInfo(order, plan) {
+    if (!plan) return null;
+    const name = (st) => {
+      const k = `${st.location.lat.toFixed(5)},${st.location.lng.toFixed(5)}`;
+      const match = (p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}` === k;
+      if (st.type === 'PICKUP') return this.world.stores.find(match)?.name || 'Restaurant';
+      return this.world.gates.find(match)?.name || 'Drop point';
+    };
+    return el('div', { class: 'trip' },
+      el('div', { class: 'trip-title' }, plan.order_ids.length > 1 ? `Shared trip · ${plan.order_ids.length} orders` : 'Trip'),
+      el('ol', {}, plan.stops.map((st) => el('li', { class: st.order_id === order.id ? 'mine' : '' },
+        el('span', { class: `tag ${st.type === 'PICKUP' ? 'pick' : 'drop'}` }, st.type === 'PICKUP' ? 'Pickup' : 'Drop'),
+        el('span', {}, `${name(st)}${st.order_id === order.id ? ' (your order)' : ''}`),
+        el('span', { class: 'muted' }, fmtTime(st.eta)),
+      ))),
+    );
+  }
+
+  clockNote() {
+    if (this.engine.auto) return el('p', { class: 'muted small center' }, 'Simulated time runs fast: 1 minute every 1.5 seconds.');
+    return el('div', { class: 'why' },
+      'Simulated time is paused, so your order will not move. ',
+      el('button', { class: 'linkish', onclick: () => { this.engine.setAuto(true); this.render(); } }, 'Resume time'),
     );
   }
 
@@ -238,11 +302,7 @@ export class Checkout {
   }
 
   planInfo(order) {
-    if (!order.plan_id) {
-      return el('div', { class: 'why' }, order.mode === 'FLEX'
-        ? 'Waiting briefly for nearby orders to combine with yours (always within your approved window).'
-        : 'Waiting for the food to be ready; a rider will be assigned just in time.');
-    }
+    if (!order.plan_id) return null; // the status line already explains the wait
     const plan = this.engine.plans.get(order.plan_id);
     if (!plan) return null;
     const others = plan.order_ids.length - 1;

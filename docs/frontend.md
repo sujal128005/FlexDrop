@@ -109,12 +109,28 @@ The 3D view is one consistent world rather than lines drawn over a map.
   **Zoom to** flies to any landmark, hostel, PG, Instamart store or restaurant, and name tags
   with the logo appear when you are close.
 * Drag to rotate, scroll to zoom, right-drag to pan. **Auto-rotate** for a presentation.
-* **Quality.** With a GPU the view uses soft shadows, sky-based lighting and grass. On software
-  renderers (and on machines that cannot keep up) it switches to a lite mode and spaces frames
-  out so the page stays responsive. Force a mode with `/app/?quality=high` or `/app/?quality=lite`.
+* **Quality and speed.** With a GPU the view uses soft shadows (rendered once, not every frame),
+  sky-based lighting and grass. If frames get slow it first drops to pixel density 1, then to a
+  lite mode without shadows, sky lighting or grass; software renderers start in lite mode and
+  space frames out so the page stays responsive. Force a mode with `/app/?quality=high` or
+  `/app/?quality=lite`. Scrolling zooms towards the mouse pointer, like a map.
+* **Street map** tiles come from OpenStreetMap, whose usage policy requires a Referer header; the
+  app sends its origin (`Referrer-Policy: strict-origin-when-cross-origin`).
 
 The 3D view needs the Studio site plan. Against a normal deployment the operations screen uses
 the street map.
+
+## Following an order
+
+When the student confirms an order, simulated time starts running on its own (1 minute every 1.5
+seconds; **Pause** at the top right stops it). The phone then shows, live:
+* a plain-language status ("looking for nearby orders to combine", "Rider P012 assigned, picking
+  up at 19:04", "on the way", "Delivered") and a progress bar to the arrival time;
+* the 4-step timeline (received, rider assigned, picked up, delivered);
+* the rider's whole trip: every pickup and drop in order, with the student's own stops marked,
+  and how many of the approved flexible minutes FlexDrop actually used;
+* **Watch rider in 3D**: switches to Operations and follows that rider with the camera, with its
+  route highlighted. Drag the view or press **Stop following** to take the camera back.
 
 ## The simulated clock
 
@@ -126,7 +142,7 @@ Each control on the top bar plays the role of one Swiggy system:
 * **Auto** also generates student demand (Quiet / Evening / Peak) and runs one simulated minute
   every 1.5 seconds.
 
-Every timestamp sent to the API comes from the simulated clock, so a 30-minute evening plays out
+Placing an order in the student checkout starts **Auto** for you. Every timestamp sent to the API comes from the simulated clock, so a 30-minute evening plays out
 in under a minute. Customer choices in generated demand follow a simple utility (bigger reward and
 shorter wait are more attractive). The student checkout lets you make the choice yourself.
 

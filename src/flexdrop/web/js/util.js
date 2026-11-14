@@ -8,6 +8,15 @@ export function fmtTime(value) {
   return d.toLocaleTimeString('en-IN', { timeZone: IST, hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
+/** Savings against solo delivery, worded for people: "saving ₹40 vs solo" or "₹12 more than solo". */
+export function fmtSaving(v) {
+  if (v === null || v === undefined || Number.isNaN(v)) return 'saving n/a';
+  const r = Math.round(v);
+  if (r > 0) return `saving ${fmtMoney(r)} vs solo`;
+  if (r === 0) return 'same cost as solo';
+  return `${fmtMoney(-r)} more than solo`;
+}
+
 export function fmtMoney(v, digits = 0) {
   if (v === null || v === undefined || Number.isNaN(v)) return 'n/a';
   return '₹' + Number(v).toLocaleString('en-IN', { minimumFractionDigits: digits, maximumFractionDigits: digits });

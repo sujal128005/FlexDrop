@@ -19,7 +19,8 @@ REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
-    "Referrer-Policy": "no-referrer",
+    # OpenStreetMap's tile policy requires a Referer; send only the origin to other sites.
+    "Referrer-Policy": "strict-origin-when-cross-origin",
     "Cache-Control": "no-store",
     "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
 }

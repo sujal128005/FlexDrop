@@ -89,13 +89,17 @@ function setupClock(engine) {
   document.getElementById('btn-tick1').addEventListener('click', step(1));
   document.getElementById('btn-tick5').addEventListener('click', step(5));
   demand.addEventListener('change', () => { engine.demandRate = Number(demand.value); });
+  engine.onAutoError = (err) => toast(`Auto-run stopped: ${err.message}`, 'err');
+  // the button follows the engine, so auto-run started from the checkout shows up here too
+  const syncAuto = () => {
+    autoBtn.textContent = engine.auto ? '⏸ Pause' : '▶ Auto';
+    autoBtn.classList.toggle('running', Boolean(engine.auto));
+  };
+  engine.onChange(syncAuto);
+  syncAuto();
   autoBtn.addEventListener('click', () => {
     const on = !engine.auto;
-    engine.setAuto(on, (err) => {
-      toast(`Auto-run stopped: ${err.message}`, 'err');
-      autoBtn.textContent = '▶ Auto';
-    });
-    autoBtn.textContent = on ? '⏸ Pause' : '▶ Auto';
+    engine.setAuto(on);
     if (on) toast('Auto-run: 1 simulated minute every 1.5 s with student demand', 'ok');
   });
 }
@@ -220,6 +224,13 @@ async function setupMapViews(engine) {
     get scene() {
       return scene;
     },
+    /** Switch to the 3D view and follow one rider (used by "Watch your rider"). */
+    async watch(partnerId, planId) {
+      current = can3d ? '3d' : '2d';
+      show(current);
+      const sc = await ensureScene();
+      sc?.follow(partnerId, planId);
+    },
     render() {
       if (current === '3d') scene?.render();
       else street?.render();
@@ -246,6 +257,10 @@ async function main() {
   const ops = new Ops(engine, map);
   const checkout = new Checkout(document.getElementById('phone-screen'), document.getElementById('my-orders'), engine);
   const results = new Results(document.getElementById('results'), engine);
+  checkout.onWatch = (partnerId, planId) => {
+    document.querySelector('.tab[data-view="ops"]').click();
+    map.watch(partnerId, planId);
+  };
   window.flexdrop = { engine, ops, checkout, results, get scene() { return map.scene; } }; // handy for debugging from the console
   setupTabs(map, results);
   setupClock(engine);

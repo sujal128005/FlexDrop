@@ -142,7 +142,7 @@ code { background: #f0f1f5; padding: 1px 5px; border-radius: 5px; font-size: .85
 .scene3d { position: relative; flex: 1; min-height: 600px; background: #101828; overflow: hidden; }
 .scene3d .scene-canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; display: block; cursor: grab; }
 .scene3d .scene-canvas:active { cursor: grabbing; }
-.scene-labels { position: absolute; inset: 0; pointer-events: none; }
+.scene-labels { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
 .scene-label { font: 600 11px/1.2 Inter, "Segoe UI", system-ui, sans-serif; padding: 3px 7px; border-radius: 6px; color: #fff; white-space: nowrap; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
 .scene-label.hostel { background: #2563eb; }
 .scene-label.pg { background: #7c3aed; }
@@ -240,3 +240,28 @@ code { background: #f0f1f5; padding: 1px 5px; border-radius: 5px; font-size: .85
 
 .dot.swiggy { background: #fc8019; box-shadow: 0 0 0 3px rgba(252, 128, 25, .35); }
 .dot.instamart { background: #1f4fd1; box-shadow: 0 0 0 3px rgba(31, 79, 209, .35); }
+
+/* order tracking */
+.status-line { font-size: .86rem; font-weight: 600; padding: 10px 12px; border-radius: 10px; background: #fff4ea; color: #9a4a0b; margin: 6px 0 8px; }
+.status-line.status-PICKED_UP { background: #eaf2ff; color: #1d4ed8; }
+.status-line.status-DELIVERED { background: #e9f8ef; color: #15803d; }
+.status-line.status-CANCELLED { background: #fdecec; color: #b91c1c; }
+.progress { height: 8px; border-radius: 99px; background: #eef0f4; overflow: hidden; margin: 4px 0 6px; }
+.progress span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #fc8019, #ffb15c); transition: width .8s ease; }
+.trip { border: 1px solid #eceef2; border-radius: 10px; padding: 8px 10px; margin: 6px 0 10px; font-size: .8rem; }
+.trip-title { font-weight: 700; margin-bottom: 4px; }
+.trip ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.trip li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
+.trip li.mine { font-weight: 700; }
+.trip .tag { font-size: .66rem; font-weight: 700; padding: 2px 6px; border-radius: 6px; color: #fff; }
+.trip .tag.pick { background: #fc8019; }
+.trip .tag.drop { background: #2563eb; }
+.linkish { background: none; border: 0; padding: 0; color: #c2410c; font-weight: 700; text-decoration: underline; cursor: pointer; font: inherit; }
+.center { text-align: center; }
+#btn-auto.running { background: #15803d; border-color: #15803d; }
+#btn-watch { margin-bottom: 8px; border-color: #fc8019; color: #c2410c; font-weight: 700; }
+
+/* 3D: following a rider */
+.scene-follow { position: absolute; left: 12px; top: 12px; z-index: 8; display: flex; gap: 10px; align-items: center; background: rgba(17, 24, 39, .88); color: #fff; font-size: .82rem; padding: 7px 10px; border-radius: 10px; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
+.scene-follow button { background: #fc8019; color: #fff; border: 0; border-radius: 6px; padding: 3px 8px; cursor: pointer; font-weight: 700; }
+.scene-follow.hidden { display: none; }

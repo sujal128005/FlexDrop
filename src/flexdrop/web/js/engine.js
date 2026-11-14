@@ -7,7 +7,7 @@
 // All timestamps sent to the API come from the simulated clock, so time can be fast-forwarded.
 
 import { ApiError } from './api.js';
-import { haversineKm, pick, poisson, shortId } from './util.js';
+import { fmtSaving, haversineKm, pick, poisson, shortId } from './util.js';
 
 const ACTIVE = new Set(['PROPOSED', 'ACCEPTED', 'IN_PROGRESS']);
 
@@ -191,7 +191,7 @@ export class Engine {
     if (out.plans.length) {
       const saving = out.plans.reduce((s, p) => s + p.expected_savings, 0);
       this.log(
-        `optimiser: ${out.plans.length} plan(s), ${grouped} coordinated, saving ₹${saving.toFixed(0)} vs solo; ` +
+        `optimiser: ${out.plans.length} plan(s), ${grouped} coordinated, ${fmtSaving(saving)}; ` +
           `${out.held_order_ids.length} held for coordination (${out.latency_ms.toFixed(0)} ms)`,
         'opt',
       );
@@ -295,10 +295,11 @@ export class Engine {
     });
   }
 
-  setAuto(on, onError) {
+  /** Auto-run: one simulated minute (with student demand) every 1.5 s until paused. */
+  setAuto(on, onError = this.onAutoError) {
     if (on && !this.auto) {
       this.auto = setInterval(() => {
-        if (this.busy) return;
+        if (this.busy || (typeof document !== 'undefined' && document.hidden)) return;
         this.busy = true;
         this.tick(1, true)
           .catch((e) => { this.setAuto(false); onError?.(e); })
@@ -308,6 +309,7 @@ export class Engine {
       clearInterval(this.auto);
       this.auto = null;
     }
+    this.emit();
   }
 
   /** Interpolated rider position for an active plan at simulated time ``t`` (default: now). */
